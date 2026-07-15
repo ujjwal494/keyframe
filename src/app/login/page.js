@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, login } = useAuth();
   const router = useRouter();
 
@@ -25,43 +26,47 @@ export default function LoginPage() {
     setMousePosition({ x, y });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
+      setIsSubmitting(false);
       return;
     }
 
-    // Check localStorage for registered users
     try {
-      const users = JSON.parse(localStorage.getItem("keyframe_users") || "[]");
-      const found = users.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase().trim()
-      );
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
-      if (!found) {
-        setError("No account found with this email. Please sign up first.");
-        return;
-      }
+      const data = await res.json();
 
-      if (found.password !== password) {
-        setError("Incorrect password. Please try again.");
+      if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+        setIsSubmitting(false);
         return;
       }
 
       // Login successful
       login({
-        displayName: found.displayName,
-        email: found.email,
-        username: found.username,
-        profilePic: found.profilePic || "",
+        displayName: data.user.displayName,
+        email: data.user.email,
+        username: data.user.username,
+        profilePic: data.user.profilePic || "",
       });
 
       router.push("/");
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("Network error. Please check your connection and try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -173,8 +178,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-md mt-2">
-                Sign in
+              <button type="submit" disabled={isSubmitting} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md mt-2">
+                {isSubmitting ? "Signing in..." : "Sign in"}
               </button>
             </form>
           </div>

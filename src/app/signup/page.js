@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, login } = useAuth();
   const router = useRouter();
 
@@ -27,59 +28,55 @@ export default function SignupPage() {
     setMousePosition({ x, y });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
     if (!displayName.trim() || !username.trim() || !email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
+      setIsSubmitting(false);
       return;
     }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      const users = JSON.parse(localStorage.getItem("keyframe_users") || "[]");
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: displayName.trim(),
+          username: username.trim(),
+          email: email.trim(),
+          password,
+        }),
+      });
 
-      // Check for duplicate email
-      if (users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim())) {
-        setError("An account with this email already exists.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+        setIsSubmitting(false);
         return;
       }
 
-      // Check for duplicate username
-      if (users.find((u) => u.username.toLowerCase() === username.toLowerCase().trim())) {
-        setError("This username is already taken.");
-        return;
-      }
-
-      // Create new user
-      const newUser = {
-        displayName: displayName.trim(),
-        username: username.trim(),
-        email: email.toLowerCase().trim(),
-        password: password,
-        profilePic: "",
-        createdAt: new Date().toISOString(),
-      };
-
-      users.push(newUser);
-      localStorage.setItem("keyframe_users", JSON.stringify(users));
-
-      // Auto-login after signup
+      // Auto-login after successful signup
       login({
-        displayName: newUser.displayName,
-        email: newUser.email,
-        username: newUser.username,
-        profilePic: "",
+        displayName: data.user.displayName,
+        email: data.user.email,
+        username: data.user.username,
+        profilePic: data.user.profilePic || "",
       });
 
       router.push("/");
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("Network error. Please check your connection and try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -216,8 +213,8 @@ export default function SignupPage() {
                 />
               </div>
 
-              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-md mt-2">
-                Create Account
+              <button type="submit" disabled={isSubmitting} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md mt-2">
+                {isSubmitting ? "Creating Account..." : "Create Account"}
               </button>
             </form>
 

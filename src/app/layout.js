@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${inter.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
