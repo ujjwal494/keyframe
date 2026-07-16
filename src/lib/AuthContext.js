@@ -8,38 +8,44 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate from localStorage on mount
+  // On mount: check if the user has a valid session by calling /api/auth/me
+  // The browser automatically sends the HTTP-Only cookie — we don't touch it
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("keyframe_user");
-      console.log(stored);
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error("Failed to parse stored user", e);
-    }
-    setIsLoading(false);
+    fetch("/api/auth/me")
+      .then((res) => {
+        if (!res.ok) throw new Error("Not authenticated");
+        return res.json();
+      })
+      .then((data) => {
+        setUser(data.user);
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
+  // Called after login/signup — just sets user state
+  // The cookie is already set by the server response
   const login = (userData) => {
-    // userData: { displayName, email, username, profilePic }
-    const userObj = {
+    setUser({
+      id: userData.id,
       displayName: userData.displayName,
       email: userData.email,
       username: userData.username,
       profilePic: userData.profilePic || "",
-    };
-    setUser(userObj);
-    localStorage.setItem("keyframe_user", JSON.stringify(userObj));
+    });
   };
 
-  const logout = () => {
+  // Calls the logout API to clear the HTTP-Only cookie
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-    localStorage.removeItem("keyframe_user");
   };
 
-  // Generate initials from display name (first 2 letters of first 2 words)
+  // Generate initials from display name
   const getInitials = (name) => {
     if (!name) return "??";
     const parts = name.trim().split(/\s+/);

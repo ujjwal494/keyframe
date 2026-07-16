@@ -65,8 +65,9 @@ export default function SignupPage() {
         return;
       }
 
-      // Auto-login after successful signup
+      // Auto-login after successful signup — cookie is set by the server automatically
       login({
+        id: data.user.id,
         displayName: data.user.displayName,
         email: data.user.email,
         username: data.user.username,

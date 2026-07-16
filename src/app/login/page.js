@@ -55,8 +55,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Login successful
+      // Login successful — cookie is set by the server automatically
       login({
+        id: data.user.id,
         displayName: data.user.displayName,
         email: data.user.email,
         username: data.user.username,

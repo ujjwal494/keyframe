@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/app/models/user";
+import { signToken, setTokenCookie } from "@/lib/auth";
 
 export async function POST(request) {
   try {
@@ -9,7 +10,6 @@ export async function POST(request) {
 
     const { email, password } = await request.json();
 
-    // Validate fields
     if (!email?.trim() || !password?.trim()) {
       return NextResponse.json(
         { error: "Email and password are required." },
@@ -17,7 +17,6 @@ export async function POST(request) {
       );
     }
 
-    // Find user by email
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
@@ -26,17 +25,22 @@ export async function POST(request) {
       );
     }
 
-    // Compare password with the stored hash using bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: "Incorrect password." },
+        { error: "Incorrect email or password." },
         { status: 401 }
       );
     }
 
-    // Return user data
-    return NextResponse.json({
+    // Create JWT and set it as an HTTP-Only cookie
+    const token = signToken({
+      id: user._id,
+      email: user.email,
+      username: user.username,
+    });
+
+    const response = NextResponse.json({
       user: {
         id: user._id,
         displayName: user.displayName,
@@ -45,6 +49,11 @@ export async function POST(request) {
         profilePic: user.profilePic,
       },
     });
+
+    // Attach the cookie to the response
+    setTokenCookie(response, token);
+
+    return response;
 
   } catch (error) {
     console.error("Login error:", error);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/app/models/user";
+import { signToken, setTokenCookie } from "@/lib/auth";
 
 export async function POST(request) {
   try {
@@ -9,7 +10,6 @@ export async function POST(request) {
 
     const { displayName, username, email, password } = await request.json();
 
-    // Validate all fields
     if (!displayName?.trim() || !username?.trim() || !email?.trim() || !password?.trim()) {
       return NextResponse.json(
         { error: "All fields are required." },
@@ -24,7 +24,6 @@ export async function POST(request) {
       );
     }
 
-    // Check if email already exists
     const existingEmail = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingEmail) {
       return NextResponse.json(
@@ -33,7 +32,6 @@ export async function POST(request) {
       );
     }
 
-    // Check if username already exists
     const existingUsername = await User.findOne({ 
       username: { $regex: new RegExp(`^${username.trim()}$`, "i") } 
     });
@@ -44,11 +42,9 @@ export async function POST(request) {
       );
     }
 
-    // Hash the password with bcrypt (10 salt rounds)
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create the user in MongoDB
     const newUser = await User.create({
       displayName: displayName.trim(),
       username: username.trim(),
@@ -61,8 +57,14 @@ export async function POST(request) {
       badges: [],
     });
 
-    // Return user data (never return the password hash!)
-    return NextResponse.json({
+    // Create JWT and set it as an HTTP-Only cookie
+    const token = signToken({
+      id: newUser._id,
+      email: newUser.email,
+      username: newUser.username,
+    });
+
+    const response = NextResponse.json({
       user: {
         id: newUser._id,
         displayName: newUser.displayName,
@@ -71,6 +73,11 @@ export async function POST(request) {
         profilePic: newUser.profilePic,
       },
     }, { status: 201 });
+
+    // Attach the cookie to the response
+    setTokenCookie(response, token);
+
+    return response;
 
   } catch (error) {
     console.error("Signup error:", error);
