@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/app/models/user";
-import { signToken, setTokenCookie } from "@/lib/auth";
 
 export async function POST(request) {
   try {
@@ -55,29 +54,17 @@ export async function POST(request) {
       skillTags: [],
       reputation: 1,
       badges: [],
+      provider: "credentials",
     });
 
-    // Create JWT and set it as an HTTP-Only cookie
-    const token = signToken({
-      id: newUser._id,
-      email: newUser.email,
-      username: newUser.username,
-    });
-
-    const response = NextResponse.json({
+    return NextResponse.json({
+      message: "User created successfully",
       user: {
         id: newUser._id,
-        displayName: newUser.displayName,
-        username: newUser.username,
         email: newUser.email,
-        profilePic: newUser.profilePic,
+        username: newUser.username,
       },
     }, { status: 201 });
-
-    // Attach the cookie to the response
-    setTokenCookie(response, token);
-
-    return response;
 
   } catch (error) {
     console.error("Signup error:", error);

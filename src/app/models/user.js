@@ -5,7 +5,9 @@ const userSchema = new Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   username: { type: String, required: true, unique: true, trim: true },
   displayName: { type: String, required: true, trim: true },
-  passwordHash: { type: String, required: true },
+  passwordHash: { type: String, required: false },
+  provider: { type: String, enum: ['credentials', 'google', 'github'], default: 'credentials' },
+  providerId: { type: String },
   profilePic: { type: String, default: "" },
   bio: { type: String, maxlength: 300 },
   skillTags: [String], // e.g. "Premiere Pro", "After Effects", "DaVinci Resolve"

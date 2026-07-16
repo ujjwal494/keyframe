@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useAuth } from "@/lib/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 import MobileMenu from "./MobileMenu";
 import MobileSearchToggle from "./MobileSearchToggle";
 
 export default function Navbar() {
-  const { user, logout, getInitials } = useAuth();
+  const { user, getInitials } = useAuth();
 
   // Pick a gradient based on initials for variety
   const avatarGradients = [
@@ -77,13 +78,13 @@ export default function Navbar() {
         {user ? (
           <div className="relative group ml-1 md:ml-2">
             {/* Avatar */}
-            {user.profilePic ? (
+            {user.image ? (
               <div className="w-8 h-8 rounded-full border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all">
-                <img src={user.profilePic} alt={user.displayName} className="w-full h-full object-cover" />
+                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getGradient(user.displayName)} flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all shadow-md shrink-0`}>
-                {getInitials(user.displayName)}
+              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all shadow-md shrink-0`}>
+                {getInitials(user.name)}
               </div>
             )}
 
@@ -91,17 +92,17 @@ export default function Navbar() {
             <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
               <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
                 <div className="flex items-center gap-3">
-                  {user.profilePic ? (
+                  {user.image ? (
                     <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
-                      <img src={user.profilePic} alt={user.displayName} className="w-full h-full object-cover" />
+                      <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getGradient(user.displayName)} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
-                      {getInitials(user.displayName)}
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
+                      {getInitials(user.name)}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{user.displayName}</p>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{user.name}</p>
                     <p className="text-xs text-zinc-500 truncate">{user.email}</p>
                   </div>
                 </div>
@@ -119,7 +120,7 @@ export default function Navbar() {
               </div>
               <div className="p-1.5 border-t border-zinc-100 dark:border-zinc-800">
                 <button 
-                  onClick={logout}
+                  onClick={() => signOut({ callbackUrl: "/" })}
                   className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                 >
                   Log out

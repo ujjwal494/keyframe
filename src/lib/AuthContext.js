@@ -1,49 +1,25 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { SessionProvider, useSession } from "next-auth/react";
+import { createContext, useContext } from "react";
 
+// We keep a lightweight context just for our helper functions like getInitials
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  return (
+    <SessionProvider>
+      <AuthHelperProvider>{children}</AuthHelperProvider>
+    </SessionProvider>
+  );
+}
 
-  // On mount: check if the user has a valid session by calling /api/auth/me
-  // The browser automatically sends the HTTP-Only cookie — we don't touch it
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => {
-        if (!res.ok) throw new Error("Not authenticated");
-        return res.json();
-      })
-      .then((data) => {
-        setUser(data.user);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
+// Internal provider that has access to the NextAuth session
+function AuthHelperProvider({ children }) {
+  const { data: session, status } = useSession();
 
-  // Called after login/signup — just sets user state
-  // The cookie is already set by the server response
-  const login = (userData) => {
-    setUser({
-      id: userData.id,
-      displayName: userData.displayName,
-      email: userData.email,
-      username: userData.username,
-      profilePic: userData.profilePic || "",
-    });
-  };
-
-  // Calls the logout API to clear the HTTP-Only cookie
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
-  };  
+  const user = session?.user || null;
+  const isLoading = status === "loading";
 
   // Generate initials from display name
   const getInitials = (name) => {
@@ -56,12 +32,13 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, getInitials }}>
+    <AuthContext.Provider value={{ user, isLoading, getInitials }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// Custom hook to replace our old useAuth hook seamlessly
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
