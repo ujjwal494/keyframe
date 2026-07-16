@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-  };
+  };  
 
   // Generate initials from display name
   const getInitials = (name) => {
