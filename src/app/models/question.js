@@ -48,7 +48,7 @@ const questionSchema = new Schema({
 }, { timestamps: true });
 
 // Generate a URL-friendly slug from the title before saving
-questionSchema.pre("validate", function (next) {
+questionSchema.pre("validate", function () {
   if (this.isModified("title") || this.isNew) {
     const base = this.title
       .toLowerCase()
@@ -62,7 +62,6 @@ questionSchema.pre("validate", function (next) {
       : Math.random().toString(36).substring(2, 8);
     this.slug = `${base}-${suffix}`;
   }
-  next();
 });
 
 // Indexes for common query patterns
