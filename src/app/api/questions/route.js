@@ -118,7 +118,7 @@ export async function POST(request) {
     }
 
     return NextResponse.json(
-      { error: `Server error: ${error.message || error.toString()}` },
+      { error: "Internal server error. Please try again." },
       { status: 500 }
     );
   }

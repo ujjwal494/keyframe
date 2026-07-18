@@ -19,6 +19,12 @@ export default function LoginPage() {
   // If already logged in, redirect home
   useEffect(() => {
     if (user) router.push("/");
+    
+    // Check URL for custom error messages (e.g., from redirecting unauthenticated users)
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("error") === "login_required") {
+      setError("You must be logged in to ask a question.");
+    }
   }, [user, router]);
 
   const handleMouseMove = (e) => {
