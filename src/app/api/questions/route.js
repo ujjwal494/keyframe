@@ -118,7 +118,34 @@ export async function POST(request) {
     }
 
     return NextResponse.json(
-      { error: "Internal server error. Please try again." },
+      { error: `Server error: ${error.message || error.toString()}` },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/questions
+ * Fetches a paginated list of questions.
+ *
+ * Query Params: page, limit, tag, author, sort
+ */
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const tag = searchParams.get("tag");
+    const author = searchParams.get("author");
+    const sort = searchParams.get("sort") || "newest";
+
+    const data = await QuestionRepository.list({ page, limit, tag, author, sort });
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Fetch questions error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch questions." },
       { status: 500 }
     );
   }
