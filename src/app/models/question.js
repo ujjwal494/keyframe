@@ -65,10 +65,8 @@ questionSchema.pre("validate", function () {
 });
 
 // Indexes for common query patterns
-questionSchema.index({ author: 1, createdAt: -1 });
-questionSchema.index({ tags: 1 });
-questionSchema.index({ voteScore: -1, createdAt: -1 });
-questionSchema.index({ createdAt: -1 });
-questionSchema.index({ slug: 1 }, { unique: true });
+questionSchema.index({ createdAt: -1 }); // For sorting by newest
+questionSchema.index({ tags: 1 });       // For filtering by tag
+questionSchema.index({ author: 1 });     // For fetching user's questions
 
 export default mongoose.models.Question || mongoose.model("Question", questionSchema);

@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import Question from "@/app/models/question";
+import User from "@/app/models/user";
 
 /**
  * QuestionRepository — data-access layer for questions.
