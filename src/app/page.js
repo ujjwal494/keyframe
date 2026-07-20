@@ -2,8 +2,47 @@ import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
 import QuestionCard from "@/components/QuestionCard";
+import QuestionRepository from "@/lib/questionRepository";
 
-export default function Home() {
+function formatTimeAgo(date) {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + " years ago";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + " months ago";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + " days ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " hours ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " minutes ago";
+  return Math.floor(seconds) + " seconds ago";
+}
+
+export default async function Home() {
+  // Fetch real questions from MongoDB
+  let dbQuestions = [];
+  try {
+    const result = await QuestionRepository.list({ limit: 10 });
+    dbQuestions = result.questions || [];
+  } catch (error) {
+    console.error("Failed to fetch questions for homepage:", error);
+  }
+
+  // Format the real questions to match the UI component's expected props
+  const formattedRealQuestions = dbQuestions.map((q) => ({
+    id: q.slug || q._id.toString(),
+    title: q.title,
+    excerpt: q.body,
+    tags: q.tags || [],
+    author: q.author?.displayName || q.author?.username || "Unknown",
+    upvotes: q.voteScore || 0,
+    answers: q.answerCount || 0,
+    timeAgo: formatTimeAgo(q.createdAt),
+    imagePreview: q.media && q.media.length > 0 ? q.media[0].url : null,
+  }));
+
+  // Hardcoded dummy questions for design filler
   const sampleQuestions = [
     {
       id: 1,
@@ -38,6 +77,9 @@ export default function Home() {
     }
   ];
 
+  // Combine real and sample questions
+  const allQuestions = [...formattedRealQuestions, ...sampleQuestions];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -69,7 +111,7 @@ export default function Home() {
           </div>
 
           <div className="space-y-6">
-            {sampleQuestions.map((q) => (
+            {allQuestions.map((q) => (
               <QuestionCard key={q.id} {...q} />
             ))}
           </div>
