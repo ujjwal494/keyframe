@@ -6,8 +6,9 @@ import mongoose from "mongoose";
  * GET /api/questions/[id]
  * Fetches a single question by its MongoDB ObjectId or its URL slug.
  */
-export async function GET(request, { params }) {
+export async function GET(request, props) {
   try {
+    const params = await props.params;
     const identifier = params.id; // Could be an ObjectId or a slug
     let question = null;
 
