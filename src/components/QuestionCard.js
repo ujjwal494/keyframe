@@ -32,12 +32,12 @@ export default function QuestionCard({ id, title, excerpt, tags, author, upvotes
           </div>
 
           <Link href={`/question/${id || 1}`}>
-            <h2 className="text-lg font-semibold text-blue-600 dark:text-foreground mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
+            <h2 className="text-lg font-semibold text-blue-600 dark:text-foreground mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer break-words">
               {title}
             </h2>
           </Link>
 
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-2">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 line-clamp-2 break-words">
             {excerpt}
           </p>
 

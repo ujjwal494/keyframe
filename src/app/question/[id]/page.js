@@ -133,7 +133,8 @@ export default function QuestionDetail() {
       <div className="flex pt-16">
         <Sidebar />
         
-        <main className="flex-1 lg:ml-64 xl:mr-80 p-4 md:p-6 lg:p-8 w-full">
+        <main className="flex-1 min-w-0 lg:ml-64 xl:mr-80 p-4 md:p-6 lg:p-8 w-full flex justify-center">
+          <div className="max-w-4xl w-full">
           {loading ? (
             <div className="animate-pulse space-y-6">
               <div className="h-10 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4"></div>
@@ -149,7 +150,7 @@ export default function QuestionDetail() {
             <>
               {/* Question Header */}
               <div className="mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 leading-tight">
+                <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 leading-tight break-words">
                   {question.title}
                 </h1>
                 <div className="flex items-center gap-4 text-sm text-muted border-b border-border pb-4">
@@ -182,8 +183,8 @@ export default function QuestionDetail() {
                   </button>
                 </div>
 
-                <div className="flex-1 space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                  <p className="whitespace-pre-wrap">{question.body}</p>
+                <div className="flex-1 min-w-0 space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                  <p className="whitespace-pre-wrap break-words">{question.body}</p>
                   
                   {question.media?.map((m, idx) => (
                     <div key={idx} className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 my-6">
@@ -217,7 +218,7 @@ export default function QuestionDetail() {
                     {[1, 2].map(i => (
                       <div key={i} className="animate-pulse flex gap-4">
                         <div className="w-10 h-24 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-                        <div className="flex-1 space-y-3">
+                        <div className="flex-1 min-w-0 space-y-3">
                           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
                           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4"></div>
                           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2"></div>
@@ -241,13 +242,13 @@ export default function QuestionDetail() {
                         </div>
 
                         {/* Answer Content */}
-                        <div className={`flex-1 glass-card p-5 rounded-xl border ${answer.isAccepted ? "border-indigo-500/30" : "border-zinc-200 dark:border-zinc-800"}`}>
+                        <div className={`flex-1 min-w-0 glass-card p-5 rounded-xl border ${answer.isAccepted ? "border-indigo-500/30" : "border-zinc-200 dark:border-zinc-800"}`}>
                           {answer.isAccepted && (
                             <div className="flex justify-between items-start mb-4">
                               <span className="text-sm font-medium text-indigo-400">Accepted Answer ✓</span>
                             </div>
                           )}
-                          <p className="text-zinc-700 dark:text-zinc-300 mb-4 text-sm leading-relaxed whitespace-pre-wrap">
+                          <p className="text-zinc-700 dark:text-zinc-300 mb-4 text-sm leading-relaxed whitespace-pre-wrap break-words">
                             {answer.body}
                           </p>
 
@@ -332,6 +333,7 @@ export default function QuestionDetail() {
               </div>
             </>
           )}
+          </div>
         </main>
         
         <RightSidebar />
