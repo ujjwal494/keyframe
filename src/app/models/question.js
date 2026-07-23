@@ -26,8 +26,6 @@ const questionSchema = new Schema({
     ref: "User",
     required: true,
   },
-  upvotes: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  downvotes: [{ type: Schema.Types.ObjectId, ref: "User" }],
   voteScore: { type: Number, default: 0 },
   views: { type: Number, default: 0 },
   answerCount: { type: Number, default: 0 },

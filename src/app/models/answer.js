@@ -21,8 +21,6 @@ const answerSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  upvotes: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  downvotes: [{ type: Schema.Types.ObjectId, ref: "User" }],
   voteScore: {
     type: Number,
     default: 0,
