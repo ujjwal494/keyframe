@@ -40,6 +40,10 @@ export async function POST(request) {
     if (error.message.includes("not found")) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
+    
+    if (error.message.includes("vote on your own post")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
 
     return NextResponse.json(
       { error: "An error occurred while casting your vote." },

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import Vote from "@/app/models/vote";
 import Question from "@/app/models/question";
@@ -6,61 +7,107 @@ import User from "@/app/models/user";
 
 export default class VoteRepository {
   /**
+   * Helper to calculate reputation change based on vote value.
+   * Standard logic: +10 for upvote, -2 for downvote.
+   */
+  static _getRepChange(value) {
+    return value === 1 ? 10 : -2;
+  }
+
+  /**
    * Cast a vote on a target (Question or Answer).
    * Automatically handles creation, switching, or undoing a vote.
+   * Wrapped in a MongoDB transaction for atomicity.
    */
   static async castVote({ userId, targetId, targetType, value }) {
     await dbConnect();
 
     // Ensure the models are registered
-    if (!Question || !Answer || !Vote) {
+    if (!Question || !Answer || !Vote || !User) {
       throw new Error("Models not loaded properly.");
     }
 
     const ParentModel = targetType === "Question" ? Question : Answer;
-    
-    // Check if the target actually exists
-    const targetExists = await ParentModel.exists({ _id: targetId });
-    if (!targetExists) {
-      throw new Error(`${targetType} not found.`);
-    }
 
-    const existingVote = await Vote.findOne({
-      user: userId,
-      targetId,
-      targetType,
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (existingVote) {
-      if (existingVote.value === value) {
-        // User clicked the same vote button -> Undo the vote
-        await Vote.deleteOne({ _id: existingVote._id });
-        await ParentModel.findByIdAndUpdate(targetId, {
-          $inc: { voteScore: -value },
-        });
-        return { status: "removed" };
-      } else {
-        // User clicked the opposite vote button -> Switch vote
-        const diff = value - existingVote.value; // (e.g., new 1 - old -1 = +2)
-        existingVote.value = value;
-        await existingVote.save();
-        await ParentModel.findByIdAndUpdate(targetId, {
-          $inc: { voteScore: diff },
-        });
-        return { status: "switched" };
+    try {
+      // 1. Check if the target actually exists and fetch its author
+      const target = await ParentModel.findById(targetId).session(session);
+      if (!target) {
+        throw new Error(`${targetType} not found.`);
       }
-    } else {
-      // New vote
-      await Vote.create({
+
+      // Prevent users from voting on their own posts
+      if (target.author.toString() === userId.toString()) {
+        throw new Error("You cannot vote on your own post.");
+      }
+
+      const existingVote = await Vote.findOne({
         user: userId,
         targetId,
         targetType,
-        value,
-      });
-      await ParentModel.findByIdAndUpdate(targetId, {
-        $inc: { voteScore: value },
-      });
-      return { status: "added" };
+      }).session(session);
+
+      let status;
+      let voteDiff = 0;
+      let repDiff = 0;
+
+      if (existingVote) {
+        if (existingVote.value === value) {
+          // User clicked the same vote button -> Undo the vote
+          await Vote.deleteOne({ _id: existingVote._id }, { session });
+          voteDiff = -value;
+          repDiff = -this._getRepChange(existingVote.value);
+          status = "removed";
+        } else {
+          // User clicked the opposite vote button -> Switch vote
+          voteDiff = value - existingVote.value; // (e.g., new 1 - old -1 = +2)
+          repDiff = this._getRepChange(value) - this._getRepChange(existingVote.value);
+          existingVote.value = value;
+          await existingVote.save({ session });
+          status = "switched";
+        }
+      } else {
+        // New vote
+        const newVote = new Vote({
+          user: userId,
+          targetId,
+          targetType,
+          value,
+        });
+        await newVote.save({ session });
+        voteDiff = value;
+        repDiff = this._getRepChange(value);
+        status = "added";
+      }
+
+      // 2. Update the target's vote score
+      if (voteDiff !== 0) {
+        await ParentModel.findByIdAndUpdate(
+          targetId,
+          { $inc: { voteScore: voteDiff } },
+          { session }
+        );
+      }
+
+      // 3. Update the target author's reputation
+      if (repDiff !== 0) {
+        await User.findByIdAndUpdate(
+          target.author,
+          { $inc: { reputation: repDiff } },
+          { session }
+        );
+      }
+
+      await session.commitTransaction();
+      return { status };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
   }
 }
