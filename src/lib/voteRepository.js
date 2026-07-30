@@ -4,25 +4,18 @@ import Vote from "@/app/models/vote";
 import Question from "@/app/models/question";
 import Answer from "@/app/models/answer";
 import User from "@/app/models/user";
+import { ReputationStrategyRegistry } from "@/lib/reputation";
 
 export default class VoteRepository {
-  /**
-   * Helper to calculate reputation change based on vote value.
-   * Standard logic: +10 for upvote, -2 for downvote.
-   */
+  // Delegate reputation calculation to the strategy registry
   static _getRepChange(value) {
-    return value === 1 ? 10 : -2;
+    return ReputationStrategyRegistry.getRepChange(value);
   }
 
-  /**
-   * Cast a vote on a target (Question or Answer).
-   * Automatically handles creation, switching, or undoing a vote.
-   * Wrapped in a MongoDB transaction for atomicity.
-   */
+  // Cast, switch, or undo a vote — wrapped in a transaction
   static async castVote({ userId, targetId, targetType, value }) {
     await dbConnect();
 
-    // Ensure the models are registered
     if (!Question || !Answer || !Vote || !User) {
       throw new Error("Models not loaded properly.");
     }
@@ -33,13 +26,12 @@ export default class VoteRepository {
     session.startTransaction();
 
     try {
-      // 1. Check if the target actually exists and fetch its author
+      // Fetch target and validate
       const target = await ParentModel.findById(targetId).session(session);
       if (!target) {
         throw new Error(`${targetType} not found.`);
       }
 
-      // Prevent users from voting on their own posts
       if (target.author.toString() === userId.toString()) {
         throw new Error("You cannot vote on your own post.");
       }
@@ -56,14 +48,14 @@ export default class VoteRepository {
 
       if (existingVote) {
         if (existingVote.value === value) {
-          // User clicked the same vote button -> Undo the vote
+          // Undo vote
           await Vote.deleteOne({ _id: existingVote._id }, { session });
           voteDiff = -value;
           repDiff = -this._getRepChange(existingVote.value);
           status = "removed";
         } else {
-          // User clicked the opposite vote button -> Switch vote
-          voteDiff = value - existingVote.value; // (e.g., new 1 - old -1 = +2)
+          // Switch vote
+          voteDiff = value - existingVote.value;
           repDiff = this._getRepChange(value) - this._getRepChange(existingVote.value);
           existingVote.value = value;
           await existingVote.save({ session });
@@ -83,7 +75,7 @@ export default class VoteRepository {
         status = "added";
       }
 
-      // 2. Update the target's vote score
+      // Update vote score on the target
       if (voteDiff !== 0) {
         await ParentModel.findByIdAndUpdate(
           targetId,
@@ -92,7 +84,7 @@ export default class VoteRepository {
         );
       }
 
-      // 3. Update the target author's reputation
+      // Update author reputation
       if (repDiff !== 0) {
         await User.findByIdAndUpdate(
           target.author,
