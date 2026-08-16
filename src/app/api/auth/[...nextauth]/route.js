@@ -98,10 +98,17 @@ export const authOptions = {
         if (dbUser) {
           token.id = dbUser._id.toString();
           token.username = dbUser.username;
+          token.picture = dbUser.profilePic;
         } else {
           token.id = user.id;
         }
       }
+
+      // Handle session updates (e.g., when a user changes their profile pic)
+      if (trigger === "update" && session?.image !== undefined) {
+        token.picture = session.image;
+      }
+
       return token;
     },
 
@@ -110,6 +117,21 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.username = token.username;
+        
+        // Fetch the absolute latest profile picture from the database
+        // This prevents the navbar from showing a stale image if the token hasn't refreshed
+        await dbConnect();
+        try {
+          const dbUser = await User.findById(token.id).select("profilePic");
+          if (dbUser) {
+            session.user.image = dbUser.profilePic || "";
+            token.picture = dbUser.profilePic || ""; // Keep token in sync
+          } else {
+            session.user.image = token.picture || "";
+          }
+        } catch (error) {
+          session.user.image = token.picture || "";
+        }
       }
       return session;
     },
