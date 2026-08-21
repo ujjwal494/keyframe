@@ -42,6 +42,51 @@ export default function QuestionDetail() {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
 
+  // Accept-answer state
+  const [acceptPopupAnswerId, setAcceptPopupAnswerId] = useState(null);
+  const [accepting, setAccepting] = useState(false);
+
+  // Derived: is the current user the question author?
+  const isQuestionAuthor =
+    session?.user?.id &&
+    question?.author?._id &&
+    session.user.id === question.author._id.toString();
+
+  // Accept/un-accept answer handler
+  const handleAcceptAnswer = async (answerId) => {
+    setAccepting(true);
+    try {
+      const res = await fetch(`/api/questions/${id}/answers/${answerId}/accept`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Failed to accept answer.");
+        return;
+      }
+
+      // Re-fetch answers to get the updated order
+      const refreshRes = await fetch(`/api/questions/${id}/answers`);
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        setAnswers(refreshData.answers || []);
+      }
+
+      // Also re-fetch the question to update acceptedAnswer reference
+      const qRes = await fetch(`/api/questions/${id}`);
+      if (qRes.ok) {
+        const qData = await qRes.json();
+        setQuestion(qData);
+      }
+    } catch (err) {
+      alert("Network error. Please try again.");
+    } finally {
+      setAccepting(false);
+      setAcceptPopupAnswerId(null);
+    }
+  };
+
   // Fetch question
   useEffect(() => {
     async function fetchQuestion() {
@@ -229,8 +274,8 @@ export default function QuestionDetail() {
                 ) : answers.length > 0 ? (
                   <div className="space-y-8">
                     {answers.map((answer) => (
-                      <div key={answer._id} className="flex gap-4">
-                        {/* Answer Voting */}
+                      <div key={answer._id} className="flex gap-4 relative">
+                        {/* Answer Voting + Accept Button */}
                         <div className="flex flex-col items-center gap-1">
                           <button className="text-zinc-500 hover:text-indigo-400 p-1">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
@@ -239,13 +284,44 @@ export default function QuestionDetail() {
                           <button className="text-zinc-500 hover:text-pink-400 p-1">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                           </button>
+
+                          {/* Accept button — only visible to question author */}
+                          {isQuestionAuthor && (
+                            <button
+                              id={`accept-btn-${answer._id}`}
+                              onClick={() => setAcceptPopupAnswerId(answer._id)}
+                              disabled={accepting}
+                              title={answer.isAccepted ? "Un-accept this answer" : "Accept this answer"}
+                              className={`mt-2 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                answer.isAccepted
+                                  ? "bg-emerald-500/10 text-emerald-500 border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                                  : "border border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                              }`}
+                            >
+                              <svg className="w-5 h-5" fill={answer.isAccepted ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Non-author: show static green checkmark if accepted */}
+                          {!isQuestionAuthor && answer.isAccepted && (
+                            <div className="mt-2 w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-500 border-2 border-emerald-500">
+                              <svg className="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
 
                         {/* Answer Content */}
-                        <div className={`flex-1 min-w-0 glass-card p-5 rounded-xl border ${answer.isAccepted ? "border-indigo-500/30" : "border-zinc-200 dark:border-zinc-800"}`}>
+                        <div className={`flex-1 min-w-0 glass-card p-5 rounded-xl border ${answer.isAccepted ? "border-emerald-500/30 bg-emerald-500/[0.03]" : "border-zinc-200 dark:border-zinc-800"}`}>
                           {answer.isAccepted && (
                             <div className="flex justify-between items-start mb-4">
-                              <span className="text-sm font-medium text-indigo-400">Accepted Answer ✓</span>
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-500">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                                Accepted Answer
+                              </span>
                             </div>
                           )}
                           <p className="text-zinc-700 dark:text-zinc-300 mb-4 text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -277,6 +353,69 @@ export default function QuestionDetail() {
                             <span className="text-xs text-zinc-500">• {formatTimeAgo(answer.createdAt)}</span>
                           </div>
                         </div>
+
+                        {/* ── "Is this answer useful?" Popup ── */}
+                        {acceptPopupAnswerId === answer._id && (
+                          <>
+                            {/* Backdrop */}
+                            <div
+                              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+                              onClick={() => setAcceptPopupAnswerId(null)}
+                            />
+                            {/* Modal */}
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-in">
+                                <div className="text-center">
+                                  <div className={`w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                                    answer.isAccepted
+                                      ? "bg-amber-500/10 text-amber-500"
+                                      : "bg-emerald-500/10 text-emerald-500"
+                                  }`}>
+                                    {answer.isAccepted ? (
+                                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+                                    {answer.isAccepted ? "Remove accepted status?" : "Is this answer useful?"}
+                                  </h3>
+                                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                                    {answer.isAccepted
+                                      ? "This will un-accept the answer and reverse the reputation awarded."
+                                      : "Accepting this answer awards +15 reputation to the author and marks it as the best answer."}
+                                  </p>
+                                  <div className="flex gap-3">
+                                    <button
+                                      id={`accept-no-${answer._id}`}
+                                      onClick={() => setAcceptPopupAnswerId(null)}
+                                      disabled={accepting}
+                                      className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      id={`accept-yes-${answer._id}`}
+                                      onClick={() => handleAcceptAnswer(answer._id)}
+                                      disabled={accepting}
+                                      className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-50 ${
+                                        answer.isAccepted
+                                          ? "bg-amber-500 hover:bg-amber-600"
+                                          : "bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                                      }`}
+                                    >
+                                      {accepting ? "Processing..." : "Yes"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
