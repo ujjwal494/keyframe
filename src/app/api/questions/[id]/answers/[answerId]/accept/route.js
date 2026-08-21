@@ -24,8 +24,6 @@ async function resolveQuestionId(identifier) {
 }
 
 /**
- * PATCH /api/questions/[id]/answers/[answerId]/accept
- *
  * Accepts or un-accepts an answer on a question.
  * Only the question author may call this endpoint.
  */
@@ -61,7 +59,7 @@ export async function PATCH(request, props) {
       );
     }
 
-    // 4. Delegate to the repository (authorization + business rules live there)
+    // 4. Delegate to the repository 
     const result = await AnswerRepository.acceptAnswer(questionId, answerId, session.user.id);
 
     return NextResponse.json({

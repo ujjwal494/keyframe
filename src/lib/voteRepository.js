@@ -16,6 +16,7 @@ export default class VoteRepository {
   static async castVote({ userId, targetId, targetType, value }) {
     await dbConnect();
 
+    // Ensure the models are registered
     if (!Question || !Answer || !Vote || !User) {
       throw new Error("Models not loaded properly.");
     }
@@ -26,12 +27,13 @@ export default class VoteRepository {
     session.startTransaction();
 
     try {
-      // Fetch target and validate
+      // 1. Check if the target actually exists and fetch its author
       const target = await ParentModel.findById(targetId).session(session);
       if (!target) {
         throw new Error(`${targetType} not found.`);
       }
 
+      // Prevent users from voting on their own posts
       if (target.author.toString() === userId.toString()) {
         throw new Error("You cannot vote on your own post.");
       }
@@ -48,14 +50,14 @@ export default class VoteRepository {
 
       if (existingVote) {
         if (existingVote.value === value) {
-          // Undo vote
+          // User clicked the same vote button -> Undo the vote
           await Vote.deleteOne({ _id: existingVote._id }, { session });
           voteDiff = -value;
           repDiff = -this._getRepChange(existingVote.value);
           status = "removed";
         } else {
-          // Switch vote
-          voteDiff = value - existingVote.value;
+          // User clicked the opposite vote button -> Switch vote
+          voteDiff = value - existingVote.value; // (e.g., new 1 - old -1 = +2)
           repDiff = this._getRepChange(value) - this._getRepChange(existingVote.value);
           existingVote.value = value;
           await existingVote.save({ session });
@@ -75,7 +77,7 @@ export default class VoteRepository {
         status = "added";
       }
 
-      // Update vote score on the target
+      // 2. Update the target's vote score
       if (voteDiff !== 0) {
         await ParentModel.findByIdAndUpdate(
           targetId,
@@ -84,7 +86,7 @@ export default class VoteRepository {
         );
       }
 
-      // Update author reputation
+      // 3. Update the target author's reputation
       if (repDiff !== 0) {
         await User.findByIdAndUpdate(
           target.author,
