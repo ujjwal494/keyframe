@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function QuestionCard({ id, title, excerpt, tags, author, upvotes, answers, timeAgo, imagePreview }) {
+export default function QuestionCard({ id, title, excerpt, tags, author, authorPic, upvotes, answers, timeAgo, imagePreview }) {
   return (
     <article className="p-4 md:p-5 border-b border-border hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors bg-background">
       <div className="flex flex-col sm:flex-row gap-4 md:gap-6">
@@ -26,6 +26,13 @@ export default function QuestionCard({ id, title, excerpt, tags, author, upvotes
         {/* Main Content Area */}
         <div className="flex-1 min-w-0 order-1 sm:order-2">
           <div className="flex items-center gap-2 text-xs text-muted mb-2">
+            {authorPic ? (
+              <img src={authorPic} alt={author} className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
+                {(author || "?").charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="font-medium text-zinc-700 dark:text-zinc-300">{author}</span>
             <span>•</span>
             <span>{timeAgo}</span>
