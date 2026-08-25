@@ -36,6 +36,7 @@ export default async function Home() {
     excerpt: q.body,
     tags: q.tags || [],
     author: q.author?.displayName || q.author?.username || "Unknown",
+    authorPic: q.author?.profilePic || "",
     upvotes: q.voteScore || 0,
     answers: q.answerCount || 0,
     timeAgo: formatTimeAgo(q.createdAt),
