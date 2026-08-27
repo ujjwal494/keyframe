@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/lib/AuthContext";
@@ -9,6 +10,20 @@ import MobileSearchToggle from "./MobileSearchToggle";
 
 export default function Navbar() {
   const { user, getInitials } = useAuth();
+  const [reputation, setReputation] = useState(null);
+
+  // Fetch user's reputation from their profile
+  useEffect(() => {
+    if (!user?.username) return;
+    fetch(`/api/users/${user.username}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.user?.reputation != null) {
+          setReputation(data.user.reputation);
+        }
+      })
+      .catch(() => {});
+  }, [user?.username]);
 
   // Pick a gradient based on initials for variety
   const avatarGradients = [
@@ -77,16 +92,23 @@ export default function Navbar() {
 
         {user ? (
           <div className="relative group ml-1 md:ml-2">
-            {/* Avatar */}
-            {user.image ? (
-              <div className="w-8 h-8 rounded-full border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all">
-                <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all shadow-md shrink-0`}>
-                {getInitials(user.name)}
-              </div>
-            )}
+            {/* Avatar + Rep badge */}
+            <div className="flex items-center gap-1.5 cursor-pointer">
+              {user.image ? (
+                <div className="w-8 h-8 rounded-full border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0 hover:ring-2 hover:ring-indigo-500 transition-all">
+                  <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-xs font-bold hover:ring-2 hover:ring-indigo-500 transition-all shadow-md shrink-0`}>
+                  {getInitials(user.name)}
+                </div>
+              )}
+              {reputation != null && (
+                <span className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-amber-500 dark:text-amber-400">
+                  <span className="text-[10px]">★</span>{reputation.toLocaleString()}
+                </span>
+              )}
+            </div>
 
             {/* Dropdown */}
             <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
@@ -108,9 +130,9 @@ export default function Navbar() {
                 </div>
               </div>
               <div className="p-1.5">
-                <button className="w-full text-left px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                <Link href={`/profile/${user.username}`} className="block w-full text-left px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                   My Profile
-                </button>
+                </Link>
                 <button className="w-full text-left px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                   My Questions
                 </button>
