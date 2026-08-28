@@ -33,7 +33,7 @@ export async function POST(request) {
       value,
     });
 
-    return NextResponse.json({ success: true, result });
+    return NextResponse.json({ success: true, result, newScore: result.newScore });
   } catch (error) {
     console.error("Vote API Error:", error);
     
