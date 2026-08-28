@@ -77,12 +77,13 @@ export default class VoteRepository {
         status = "added";
       }
 
-      // 2. Update the target's vote score
+      // 2. Update the target's vote score and capture the updated document
+      let updatedTarget = target;
       if (voteDiff !== 0) {
-        await ParentModel.findByIdAndUpdate(
+        updatedTarget = await ParentModel.findByIdAndUpdate(
           targetId,
           { $inc: { voteScore: voteDiff } },
-          { session }
+          { session, new: true }
         );
       }
 
@@ -96,7 +97,7 @@ export default class VoteRepository {
       }
 
       await session.commitTransaction();
-      return { status };
+      return { status, newScore: updatedTarget.voteScore };
     } catch (error) {
       await session.abortTransaction();
       throw error;
