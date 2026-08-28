@@ -3,14 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 
-/**
- * VoteButtons — optimistic-UI voting for answers.
- *
- * Props:
- *   targetId       — the Answer's _id
- *   initialScore   — current voteScore from the server
- *   initialUserVote — the logged-in user's existing vote (1 | -1 | 0)
- */
+
 export default function VoteButtons({ targetId, initialScore = 0, initialUserVote = 0 }) {
   const { data: session } = useSession();
 
@@ -65,13 +58,13 @@ export default function VoteButtons({ targetId, initialScore = 0, initialUserVot
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Vote failed");
       }
 
       // Reconcile with server-authoritative score
-      const data = await res.json();
       if (typeof data.newScore === "number") {
         setScore(data.newScore);
       }
