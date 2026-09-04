@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
+import VoteButtons from "@/components/VoteButtons";
 
 function formatTimeAgo(date) {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -22,6 +23,12 @@ function formatTimeAgo(date) {
   return Math.floor(seconds) + " seconds ago";
 }
 
+/** Format large numbers with commas */
+function formatRep(n) {
+  if (typeof n !== "number") return "1";
+  return n.toLocaleString();
+}
+
 export default function QuestionDetail() {
   const params = useParams();
   const id = params.id;
@@ -35,6 +42,9 @@ export default function QuestionDetail() {
   // Answers state
   const [answers, setAnswers] = useState([]);
   const [answersLoading, setAnswersLoading] = useState(true);
+
+  // User's existing votes on answers
+  const [userVotes, setUserVotes] = useState({});
 
   // Answer form state
   const [answerBody, setAnswerBody] = useState("");
@@ -129,6 +139,25 @@ export default function QuestionDetail() {
     if (question) fetchAnswers();
   }, [question, id]);
 
+  // Fetch the user's existing votes on answers
+  useEffect(() => {
+    async function fetchUserVotes() {
+      try {
+        const res = await fetch(`/api/questions/${id}/user-votes`);
+        if (res.ok) {
+          const data = await res.json();
+          setUserVotes(data.answerVotes || {});
+        }
+      } catch (err) {
+        console.error("Failed to fetch user votes:", err);
+      }
+    }
+
+    if (question && session?.user?.id) {
+      fetchUserVotes();
+    }
+  }, [question, id, session]);
+
   // Submit answer handler
   const handleSubmitAnswer = async (e) => {
     e.preventDefault();
@@ -210,47 +239,40 @@ export default function QuestionDetail() {
                     <span className="text-zinc-700 dark:text-zinc-300 font-medium">
                       {question.author?.displayName || question.author?.username || "Unknown"}
                     </span>
+                    {question.author?.reputation != null && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                        ★ {formatRep(question.author.reputation)}
+                      </span>
+                    )}
                   </span>
                   <span>Asked {formatTimeAgo(question.createdAt)}</span>
                   <span>Viewed {question.views} times</span>
                 </div>
               </div>
 
-              {/* Question Body with Voting */}
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center gap-2">
-                  <button className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
-                  </button>
-                  <span className="font-bold text-xl text-zinc-800 dark:text-zinc-200">{question.voteScore || 0}</span>
-                  <button className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                  </button>
-                </div>
+              {/* Question Body — NO voting */}
+              <div className="space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                <p className="whitespace-pre-wrap break-words">{question.body}</p>
+                
+                {question.media?.map((m, idx) => (
+                  <div key={idx} className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 my-6">
+                    {m.type === "image" ? (
+                      <img src={m.url} alt={m.alt || "Question media"} className="w-full" />
+                    ) : (
+                      <video src={m.url} controls className="w-full" />
+                    )}
+                  </div>
+                ))}
 
-                <div className="flex-1 min-w-0 space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                  <p className="whitespace-pre-wrap break-words">{question.body}</p>
-                  
-                  {question.media?.map((m, idx) => (
-                    <div key={idx} className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 my-6">
-                      {m.type === "image" ? (
-                        <img src={m.url} alt={m.alt || "Question media"} className="w-full" />
-                      ) : (
-                        <video src={m.url} controls className="w-full" />
-                      )}
-                    </div>
-                  ))}
-
-                  {question.tags?.length > 0 && (
-                    <div className="flex gap-2 pt-4 flex-wrap">
-                      {question.tags.map(tag => (
-                        <span key={tag} className="px-3 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-sm text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {question.tags?.length > 0 && (
+                  <div className="flex gap-2 pt-4 flex-wrap">
+                    {question.tags.map(tag => (
+                      <span key={tag} className="px-3 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-sm text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* ==================== ANSWERS SECTION ==================== */}
@@ -277,13 +299,12 @@ export default function QuestionDetail() {
                       <div key={answer._id} className="flex gap-4 relative">
                         {/* Answer Voting + Accept Button */}
                         <div className="flex flex-col items-center gap-1">
-                          <button className="text-zinc-500 hover:text-indigo-400 p-1">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
-                          </button>
-                          <span className="font-semibold text-zinc-800 dark:text-zinc-200">{answer.voteScore || 0}</span>
-                          <button className="text-zinc-500 hover:text-pink-400 p-1">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                          </button>
+                          {/* Optimistic VoteButtons */}
+                          <VoteButtons
+                            targetId={answer._id}
+                            initialScore={answer.voteScore || 0}
+                            initialUserVote={userVotes[answer._id] || 0}
+                          />
 
                           {/* Accept button — only visible to question author */}
                           {isQuestionAuthor && (
@@ -350,6 +371,11 @@ export default function QuestionDetail() {
                             <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
                               {answer.author?.displayName || answer.author?.username || "Unknown"}
                             </span>
+                            {answer.author?.reputation != null && (
+                              <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                                ★ {formatRep(answer.author.reputation)}
+                              </span>
+                            )}
                             <span className="text-xs text-zinc-500">• {formatTimeAgo(answer.createdAt)}</span>
                           </div>
                         </div>
