@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 
 
@@ -12,6 +12,18 @@ export default function VoteButtons({ targetId, initialScore = 0, initialUserVot
   const [animating, setAnimating] = useState(null); // "up" | "down" | null
   const [error, setError] = useState("");
   const inflightRef = useRef(false);
+
+  // Sync internal state when the parent's fetched data arrives.
+  // useState only reads the initial value on first mount, so when
+  // user-votes API resolves *after* VoteButtons has already mounted
+  // with initialUserVote=0, we need to push the real value in.
+  useEffect(() => {
+    setUserVote(initialUserVote);
+  }, [initialUserVote]);
+
+  useEffect(() => {
+    setScore(initialScore);
+  }, [initialScore]);
 
   const castVote = useCallback(async (value) => {
     if (!session?.user?.id) {

@@ -83,7 +83,7 @@ export default class VoteRepository {
         updatedTarget = await ParentModel.findByIdAndUpdate(
           targetId,
           { $inc: { voteScore: voteDiff } },
-          { session, new: true }
+          { session, returnDocument: 'after' }
         );
       }
 
