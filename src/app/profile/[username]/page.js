@@ -6,6 +6,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
+import DefaultAvatar from "@/components/DefaultAvatar";
 
 function formatTimeAgo(date) {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -126,9 +127,7 @@ export default function ProfilePage() {
                         <img src={user.profilePic} alt={user.displayName} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${getGradient(user.displayName)} flex items-center justify-center text-white text-3xl font-bold shrink-0 border-2 ${tier.border} ${tier.glow}`}>
-                        {user.displayName?.charAt(0)?.toUpperCase() || "?"}
-                      </div>
+                      <DefaultAvatar name={user.displayName} size={96} className={`border-2 ${tier.border} ${tier.glow}`} />
                     )}
 
                     <div className="flex-1 min-w-0 text-center sm:text-left">

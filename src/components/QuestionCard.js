@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DefaultAvatar from "./DefaultAvatar";
 
 export default function QuestionCard({ id, title, excerpt, tags, author, authorPic, upvotes, answers, timeAgo, imagePreview }) {
   return (
@@ -29,9 +30,7 @@ export default function QuestionCard({ id, title, excerpt, tags, author, authorP
             {authorPic ? (
               <img src={authorPic} alt={author} className="w-5 h-5 rounded-full object-cover" />
             ) : (
-              <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
-                {(author || "?").charAt(0).toUpperCase()}
-              </div>
+              <DefaultAvatar name={author} size={20} />
             )}
             <span className="font-medium text-zinc-700 dark:text-zinc-300">{author}</span>
             <span>•</span>

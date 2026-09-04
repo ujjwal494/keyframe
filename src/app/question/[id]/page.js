@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import RightSidebar from "@/components/RightSidebar";
 import VoteButtons from "@/components/VoteButtons";
+import DefaultAvatar from "@/components/DefaultAvatar";
 
 function formatTimeAgo(date) {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -232,9 +233,7 @@ export default function QuestionDetail() {
                     {question.author?.profilePic ? (
                       <img src={question.author.profilePic} alt="avatar" className="w-6 h-6 rounded-full" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                        {(question.author?.displayName || question.author?.username || "?").charAt(0).toUpperCase()}
-                      </div>
+                      <DefaultAvatar name={question.author?.displayName || question.author?.username} size={24} />
                     )}
                     <span className="text-zinc-700 dark:text-zinc-300 font-medium">
                       {question.author?.displayName || question.author?.username || "Unknown"}
@@ -364,9 +363,7 @@ export default function QuestionDetail() {
                             {answer.author?.profilePic ? (
                               <img src={answer.author.profilePic} alt="avatar" className="w-6 h-6 rounded-full" />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                                {(answer.author?.displayName || answer.author?.username || "?").charAt(0).toUpperCase()}
-                              </div>
+                              <DefaultAvatar name={answer.author?.displayName || answer.author?.username} size={24} />
                             )}
                             <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
                               {answer.author?.displayName || answer.author?.username || "Unknown"}

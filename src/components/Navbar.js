@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react";
 import { useAuth } from "@/lib/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 import MobileMenu from "./MobileMenu";
+import DefaultAvatar from "./DefaultAvatar";
 import MobileSearchToggle from "./MobileSearchToggle";
 
 export default function Navbar() {
@@ -25,21 +26,7 @@ export default function Navbar() {
       .catch(() => {});
   }, [user?.username]);
 
-  // Pick a gradient based on initials for variety
-  const avatarGradients = [
-    "from-indigo-500 to-purple-600",
-    "from-pink-500 to-rose-600",
-    "from-emerald-500 to-teal-600",
-    "from-amber-500 to-orange-600",
-    "from-cyan-500 to-blue-600",
-    "from-violet-500 to-fuchsia-600",
-  ];
 
-  const getGradient = (name) => {
-    if (!name) return avatarGradients[0];
-    const index = name.charCodeAt(0) % avatarGradients.length;
-    return avatarGradients[index];
-  };
 
   return (
     <nav className="sticky top-0 z-50 w-full glass border-b border-border h-16 flex items-center justify-between px-4 md:px-6 relative">
@@ -99,9 +86,7 @@ export default function Navbar() {
                   <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-xs font-bold hover:ring-2 hover:ring-indigo-500 transition-all shadow-md shrink-0`}>
-                  {getInitials(user.name)}
-                </div>
+                <DefaultAvatar name={user.name} size={32} className="hover:ring-2 hover:ring-indigo-500 transition-all shadow-md" />
               )}
               {reputation != null && (
                 <span className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-amber-500 dark:text-amber-400">
@@ -119,9 +104,7 @@ export default function Navbar() {
                       <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getGradient(user.name)} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
-                      {getInitials(user.name)}
-                    </div>
+                    <DefaultAvatar name={user.name} size={40} />
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{user.name}</p>
